@@ -41,10 +41,15 @@ func tar(ctx context.Context, enc FormatEncoder, fs *fsBufReader, f *File) (n in
 	default:
 	}
 
+	fmt.Fprintf(os.Stderr, "reading first entry\n")
+
 	// Read very first entry
 	if f == nil {
+		fmt.Fprintf(os.Stderr, "f == nil\n")
+
 		f, err := fs.Next()
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "err: %s\n", err)
 			return 0, err
 		}
 		return tar(ctx, enc, fs, f)
@@ -68,6 +73,7 @@ func tar(ctx context.Context, enc FormatEncoder, fs *fsBufReader, f *File) (n in
 	nn, err := enc.Encode(entry)
 	n += nn
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "err: %s\n", err)
 		return n, err
 	}
 
@@ -94,18 +100,23 @@ func tar(ctx context.Context, enc FormatEncoder, fs *fsBufReader, f *File) (n in
 	case f.IsDir():
 		dir := f.Path
 
+		fmt.Fprintf(os.Stderr, "adding dir: %s\n", dir)
+
 		var items []FormatGoodbyeItem
 		for {
 			f, err := fs.Next()
 			if err != nil {
 				if err == io.EOF {
+					fmt.Fprintf(os.Stderr, "break because err = io.EOF\n")
 					break
 				}
+				fmt.Fprintf(os.Stderr, "returning error\n")
 				return n, err
 			}
 
 			// End of the current dir?
-			if !(path.Dir(f.Path) == dir) {
+			if !(path.Dir(f.Path) == dir) && !(path.Dir(f.Path) == ".") {
+				fmt.Fprintf(os.Stderr, "break 'end of the current dir?': %s != %s and != .\n", path.Dir(f.Path), dir)
 				fs.Buffer(f)
 				break
 			}
@@ -164,6 +175,8 @@ func tar(ctx context.Context, enc FormatEncoder, fs *fsBufReader, f *File) (n in
 		}
 
 	case f.IsRegular():
+		fmt.Fprintf(os.Stderr, "storing regular file %s\n", f.Path)
+
 		defer f.Close()
 		payload := FormatPayload{
 			FormatHeader: FormatHeader{Size: 16 + uint64(f.Size), Type: CaFormatPayload},
@@ -176,6 +189,8 @@ func tar(ctx context.Context, enc FormatEncoder, fs *fsBufReader, f *File) (n in
 		}
 
 	case f.IsSymlink():
+		fmt.Fprintf(os.Stderr, "storing symlink %s -> %s\n", f.Path, f.LinkTarget)
+
 		symlink := FormatSymlink{
 			FormatHeader: FormatHeader{Size: uint64(16 + len(f.LinkTarget) + 1), Type: CaFormatSymlink},
 			Target:       f.LinkTarget,
@@ -187,6 +202,8 @@ func tar(ctx context.Context, enc FormatEncoder, fs *fsBufReader, f *File) (n in
 		}
 
 	case f.IsDevice():
+		fmt.Fprintf(os.Stderr, "storing device %s\n", f.Path)
+
 		device := FormatDevice{
 			FormatHeader: FormatHeader{Size: 32, Type: CaFormatDevice},
 			Major:        f.DevMajor,
@@ -199,8 +216,12 @@ func tar(ctx context.Context, enc FormatEncoder, fs *fsBufReader, f *File) (n in
 		}
 
 	default:
+		fmt.Fprintf(os.Stderr, "bad node type\n")
 		return n, fmt.Errorf("unable to determine node type of '%s'", f.Name)
 	}
+
+	fmt.Fprintf(os.Stderr, "end of switch\n")
+
 	return
 }
 

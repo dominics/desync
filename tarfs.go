@@ -100,7 +100,7 @@ func (fs TarWriter) Close() error {
 // TarReader uses a GNU tar archive as source for a tar operation (to produce
 // a catar).
 type TarReader struct {
-	r *gnutar.Reader
+	r    *gnutar.Reader
 	root *File
 }
 
@@ -122,7 +122,7 @@ func NewTarReader(r io.Reader, opts TarReaderOptions) *TarReader {
 		}
 	}
 	return &TarReader{
-		r: gnutar.NewReader(r),
+		r:    gnutar.NewReader(r),
 		root: root,
 	}
 }
@@ -130,6 +130,10 @@ func NewTarReader(r io.Reader, opts TarReaderOptions) *TarReader {
 // Next returns the next filesystem entry or io.EOF when done. The caller is responsible
 // for closing the returned File object.
 func (fs *TarReader) Next() (f *File, err error) {
+	if err != nil {
+		return nil, err
+	}
+
 	if fs.root != nil {
 		f = fs.root
 		fs.root = nil

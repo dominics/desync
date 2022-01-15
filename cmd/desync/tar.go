@@ -27,7 +27,7 @@ func newTarCommand(ctx context.Context) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "tar <catar|index> <source>",
-		Short: "Store a directory tree in a catar archive or index",
+		Short: "Store a directory tree in a catar archive or index (dom:1.1.1)",
 		Long: `Encodes a directory tree into a catar archive or alternatively an index file
 with the archive chunked into a store. Use '-' to write the output,
 catar or index to STDOUT.
